@@ -1,0 +1,32 @@
+{
+  "name": "fantasy-cricket-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Fantasy Cricket with wallet, referral system, and live scoring",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:setup": "node src/database/setup.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "fantasy",
+    "cricket"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "telegraf": "^4.15.0",
+    "mongoose": "^8.0.3",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

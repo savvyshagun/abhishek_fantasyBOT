@@ -1,0 +1,18 @@
+node_modules/
+.env
+*.log
+.DS_Store
+dist/
+coverage/
+.vscode/
+.idea/
+
+# Test and sync scripts
+test-*.js
+sync-*.js
+create-*.js
+
+# Screenshots
+*.png
+*.jpg
+*.jpeg
