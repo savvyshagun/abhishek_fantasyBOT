@@ -23,11 +23,9 @@ export const registerAdminCommands = (bot) => {
   // /admin command - Admin panel
   bot.command('admin', isAdmin, async (ctx) => {
     const userCount = await User.count();
-    const pendingWithdrawals = await Transaction.getPending('withdraw');
 
     let message = '⚙️ *Admin Panel*\n\n';
-    message += `👥 Total Users: ${userCount}\n`;
-    message += `💸 Pending Withdrawals: ${pendingWithdrawals.length}\n\n`;
+    message += `👥 Total Users: ${userCount}\n\n`;
 
     message += '*Available Commands:*\n\n';
     message += '*Matches:*\n';
@@ -39,11 +37,12 @@ export const registerAdminCommands = (bot) => {
     message += '/createcontest - Create a new contest\n';
     message += '/listcontests - List all contests\n\n';
 
-    message += '*Users & Transactions:*\n';
+    message += '*Users & Balance:*\n';
     message += '/viewusers - View user statistics\n';
-    message += '/transactions - View all transactions\n';
-    message += '/approvewithdraw - Approve withdrawal\n';
-    message += '/rejectwithdraw - Reject withdrawal\n\n';
+    message += '/finduser - Search for users\n';
+    message += '/addbalance - Add balance to user\n';
+    message += '/subtractbalance - Subtract balance from user\n';
+    message += '/setbalance - Set exact user balance\n\n';
 
     message += '*Broadcasting:*\n';
     message += '/broadcast - Send message to all users\n';
@@ -221,11 +220,71 @@ This creates:
     await ctx.reply(message, { parse_mode: 'Markdown' });
   });
 
+  // /finduser - Find user by username or name
+  bot.command('finduser', isAdmin, async (ctx) => {
+    const message = `
+🔍 *Find User*
+
+Format:
+/finduser_searchTerm
+
+Example:
+/finduser_john
+/finduser_@username
+
+This will search for users by name or username.
+    `.trim();
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // Handle find user
+  bot.hears(/^\/finduser_(.+)$/, isAdmin, async (ctx) => {
+    const searchTerm = ctx.match[1].toLowerCase().replace('@', '');
+
+    try {
+      const users = await User.getAll();
+      const matches = users.filter(user => {
+        const firstName = (user.firstName || '').toLowerCase();
+        const lastName = (user.lastName || '').toLowerCase();
+        const username = (user.username || '').toLowerCase();
+
+        return firstName.includes(searchTerm) ||
+               lastName.includes(searchTerm) ||
+               username.includes(searchTerm);
+      });
+
+      if (matches.length === 0) {
+        return ctx.reply('❌ No users found matching that search.');
+      }
+
+      let message = `🔍 *Found ${matches.length} user(s):*\n\n`;
+
+      matches.slice(0, 10).forEach(user => {
+        const displayName = user.username ? `@${user.username}` : user.firstName;
+        message += `👤 *${displayName}*\n`;
+        message += `   User ID: \`${user.telegramId}\`\n`;
+        message += `   Name: ${user.firstName} ${user.lastName || ''}\n`;
+        message += `   Balance: $${user.walletBalance}\n`;
+        message += `   Referrals: ${user.totalReferrals}\n\n`;
+      });
+
+      if (matches.length > 10) {
+        message += `\n... and ${matches.length - 10} more results`;
+      }
+
+      await ctx.reply(message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Error finding user:', error);
+      await ctx.reply('❌ Failed to search users.');
+    }
+  });
+
   // /viewusers - View user statistics
   bot.command('viewusers', isAdmin, async (ctx) => {
     const users = await User.getAll();
     const totalUsers = users.length;
-    const totalBalance = users.reduce((sum, user) => sum + parseFloat(user.wallet_balance), 0);
+    const totalBalance = users.reduce((sum, user) => sum + parseFloat(user.walletBalance), 0);
 
     let message = '👥 *User Statistics*\n\n';
     message += `Total Users: ${totalUsers}\n`;
@@ -233,9 +292,12 @@ This creates:
 
     message += '*Recent Users:*\n';
     users.slice(0, 10).forEach(user => {
-      const name = user.username ? `@${user.username}` : user.first_name;
-      message += `${name} - $${user.wallet_balance}\n`;
+      const name = user.username ? `@${user.username}` : user.firstName;
+      const userId = user.telegramId;
+      message += `${name} (ID: \`${userId}\`) - $${user.walletBalance}\n`;
     });
+
+    message += '\n💡 Use /finduser to search for specific users';
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
   });
@@ -334,5 +396,133 @@ This will send the message to all active users.
     const count = await NotificationService.broadcastToAll(bot, title, message);
 
     await ctx.reply(`✅ Broadcast sent to ${count} users!`);
+  });
+
+  // /addbalance - Add balance to user
+  bot.command('addbalance', isAdmin, async (ctx) => {
+    const message = `
+💰 *Add Balance to User*
+
+Format:
+/addbalance_userId_amount
+
+Example:
+/addbalance_1784287150_100
+
+This will add $100 to the user's wallet.
+    `.trim();
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // Handle add balance
+  bot.hears(/^\/addbalance_(\d+)_(\d+(?:\.\d+)?)$/, isAdmin, async (ctx) => {
+    const [, userId, amount] = ctx.match;
+    const telegramId = parseInt(userId);
+    const addAmount = parseFloat(amount);
+
+    try {
+      const user = await User.findByTelegramId(telegramId);
+      if (!user) {
+        return ctx.reply('❌ User not found.');
+      }
+
+      await User.updateBalance(telegramId, addAmount, 'add');
+      const updatedUser = await User.findByTelegramId(telegramId);
+
+      await ctx.reply(`✅ Added $${addAmount} to user ${user.firstName}'s wallet!\n\nPrevious balance: $${user.walletBalance}\nNew balance: $${updatedUser.walletBalance}`);
+    } catch (error) {
+      console.error('Error adding balance:', error);
+      await ctx.reply('❌ Failed to add balance.');
+    }
+  });
+
+  // /subtractbalance - Subtract balance from user
+  bot.command('subtractbalance', isAdmin, async (ctx) => {
+    const message = `
+💸 *Subtract Balance from User*
+
+Format:
+/subtractbalance_userId_amount
+
+Example:
+/subtractbalance_1784287150_50
+
+This will subtract $50 from the user's wallet.
+    `.trim();
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // Handle subtract balance
+  bot.hears(/^\/subtractbalance_(\d+)_(\d+(?:\.\d+)?)$/, isAdmin, async (ctx) => {
+    const [, userId, amount] = ctx.match;
+    const telegramId = parseInt(userId);
+    const subtractAmount = parseFloat(amount);
+
+    try {
+      const user = await User.findByTelegramId(telegramId);
+      if (!user) {
+        return ctx.reply('❌ User not found.');
+      }
+
+      if (user.walletBalance < subtractAmount) {
+        return ctx.reply(`❌ User doesn't have enough balance!\n\nCurrent balance: $${user.walletBalance}\nRequested to subtract: $${subtractAmount}`);
+      }
+
+      await User.updateBalance(telegramId, subtractAmount, 'subtract');
+      const updatedUser = await User.findByTelegramId(telegramId);
+
+      await ctx.reply(`✅ Subtracted $${subtractAmount} from user ${user.firstName}'s wallet!\n\nPrevious balance: $${user.walletBalance}\nNew balance: $${updatedUser.walletBalance}`);
+    } catch (error) {
+      console.error('Error subtracting balance:', error);
+      await ctx.reply('❌ Failed to subtract balance.');
+    }
+  });
+
+  // /setbalance - Set exact balance for user
+  bot.command('setbalance', isAdmin, async (ctx) => {
+    const message = `
+💳 *Set User Balance*
+
+Format:
+/setbalance_userId_amount
+
+Example:
+/setbalance_1784287150_500
+
+This will set the user's wallet balance to exactly $500.
+    `.trim();
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // Handle set balance
+  bot.hears(/^\/setbalance_(\d+)_(\d+(?:\.\d+)?)$/, isAdmin, async (ctx) => {
+    const [, userId, amount] = ctx.match;
+    const telegramId = parseInt(userId);
+    const newBalance = parseFloat(amount);
+
+    try {
+      const user = await User.findByTelegramId(telegramId);
+      if (!user) {
+        return ctx.reply('❌ User not found.');
+      }
+
+      // Calculate difference and update
+      const difference = newBalance - user.walletBalance;
+      if (difference > 0) {
+        await User.updateBalance(telegramId, difference, 'add');
+      } else if (difference < 0) {
+        await User.updateBalance(telegramId, Math.abs(difference), 'subtract');
+      }
+
+      const updatedUser = await User.findByTelegramId(telegramId);
+
+      await ctx.reply(`✅ Set ${user.firstName}'s wallet balance to $${newBalance}!\n\nPrevious balance: $${user.walletBalance}\nNew balance: $${updatedUser.walletBalance}`);
+    } catch (error) {
+      console.error('Error setting balance:', error);
+      await ctx.reply('❌ Failed to set balance.');
+    }
   });
 };

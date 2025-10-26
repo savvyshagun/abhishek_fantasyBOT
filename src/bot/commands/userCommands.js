@@ -122,13 +122,22 @@ Let's start playing! Use /matches to see upcoming matches.
   // /join command - with match ID
   bot.hears(/^\/join_([a-f0-9]+)$/i, async (ctx) => {
     const matchId = ctx.match[1];
+    console.log('\n🔍 JOIN DEBUG:');
+    console.log('1. Received matchId string:', matchId);
+
     const match = await Match.findById(matchId);
+    console.log('2. Found match:', match ? match.name : 'NULL');
+    console.log('3. Match._id:', match ? match._id : 'NULL');
+    console.log('4. Match._id type:', match ? typeof match._id : 'NULL');
 
     if (!match) {
       return ctx.reply('❌ Match not found.');
     }
 
+    console.log('5. Calling Contest.getByMatchId with:', match._id);
     const contests = await Contest.getByMatchId(match._id);
+    console.log('6. Found contests:', contests.length);
+    console.log('7. Contests:', JSON.stringify(contests.map(c => ({ id: c._id, name: c.name, matchId: c.matchId })), null, 2));
 
     if (contests.length === 0) {
       return ctx.reply('No contests available for this match yet.');
@@ -144,10 +153,62 @@ Let's start playing! Use /matches to see upcoming matches.
       message += `   Entry: $${contest.entryFee}\n`;
       message += `   Prize Pool: $${contest.prizePool}\n`;
       message += `   Spots: ${contest.joinedUsers}/${contest.maxSpots} (${spotsLeft} left)\n`;
-      message += `   /enter_${contest.id}\n\n`;
+      message += `   /enter\\_${contest.id}\n\n`;
     }
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // /enter command - enter a contest
+  bot.hears(/^\/enter_([a-f0-9]+)$/i, async (ctx) => {
+    const contestId = ctx.match[1];
+    const userId = ctx.from.id;
+
+    console.log('\n🎯 ENTER CONTEST DEBUG:');
+    console.log('Contest ID:', contestId);
+    console.log('User ID:', userId);
+
+    try {
+      // Find the contest
+      const contest = await Contest.findById(contestId);
+
+      if (!contest) {
+        return ctx.reply('❌ Contest not found.');
+      }
+
+      // Check if contest is full
+      const isFull = await Contest.isFull(contest.contestId);
+      if (isFull) {
+        return ctx.reply('❌ This contest is full!');
+      }
+
+      // Check user balance
+      const user = await User.findByTelegramId(userId);
+      if (user.walletBalance < contest.entryFee) {
+        return ctx.reply(`❌ Insufficient balance!\n\nEntry fee: $${contest.entryFee}\nYour balance: $${user.walletBalance}\n\nUse /deposit to add funds.`);
+      }
+
+      // For now, create a simple team with empty players (will be enhanced later)
+      const team = await Team.create({
+        user_telegram_id: userId,
+        contest_id: contest._id,
+        match_id: contest.matchId,
+        players: [], // Empty for now - can be filled by team selection later
+        captain: null,
+        vice_captain: null
+      });
+
+      // Deduct entry fee from user wallet
+      await User.updateBalance(userId, contest.entryFee, 'subtract');
+
+      // Increment contest joined users
+      await Contest.incrementJoinedUsers(contest.contestId);
+
+      await ctx.reply(`✅ Successfully entered ${contest.name}!\n\n💰 Entry fee deducted: $${contest.entryFee}\n💵 New balance: $${user.walletBalance - contest.entryFee}\n\n🎯 Team ID: ${team.teamId}\n\nGood luck! 🍀`);
+    } catch (error) {
+      console.error('Error entering contest:', error);
+      await ctx.reply('❌ Failed to enter contest. Please try again later.');
+    }
   });
 
   // /mycontests command
@@ -194,69 +255,9 @@ Let's start playing! Use /matches to see upcoming matches.
       }
     }
 
-    message += '\n*Actions:*\n';
-    message += '/deposit - Add funds\n';
-    message += '/withdraw - Withdraw funds\n';
-    message += '/transactions - View all transactions\n';
+    message += '\n💡 Contact admin to add funds to your wallet.\n';
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
-  });
-
-  // /deposit command
-  bot.command('deposit', async (ctx) => {
-    const message = `
-💵 *Deposit Funds*
-
-You can deposit USDC (BEP20) to your wallet using:
-
-1️⃣ *Transak* - Buy crypto with card
-2️⃣ *Binance Pay* - Transfer from Binance
-
-Please contact admin for deposit instructions.
-Minimum deposit: $10
-
-After depositing, send the transaction hash to admin for confirmation.
-    `.trim();
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
-  });
-
-  // /withdraw command
-  bot.command('withdraw', async (ctx) => {
-    const message = `
-💸 *Withdraw Funds*
-
-To withdraw, please provide:
-1. Amount to withdraw
-2. Your USDC (BEP20) wallet address
-
-Format: /withdraw_amount_address
-Example: /withdraw_50_0xYourWalletAddress
-
-Minimum withdrawal: $20
-Processing time: 24-48 hours
-    `.trim();
-
-    await ctx.reply(message, { parse_mode: 'Markdown' });
-  });
-
-  // Handle withdrawal request
-  bot.hears(/^\/withdraw_(\d+(?:\.\d+)?)_(.+)$/, async (ctx) => {
-    const amount = parseFloat(ctx.match[1]);
-    const walletAddress = ctx.match[2];
-    const userId = ctx.from.id;
-
-    if (amount < 20) {
-      return ctx.reply('❌ Minimum withdrawal amount is $20.');
-    }
-
-    const result = await WalletService.withdraw(userId, amount, walletAddress);
-
-    if (result.success) {
-      await ctx.reply(`✅ Withdrawal request submitted!\n\nAmount: $${amount}\nStatus: Pending admin approval\n\nYou'll be notified once processed.`);
-    } else {
-      await ctx.reply(`❌ Withdrawal failed: ${result.error}`);
-    }
   });
 
   // /refer command
@@ -331,8 +332,6 @@ Processing time: 24-48 hours
 
 *Wallet:*
 /wallet - View balance & transactions
-/deposit - Add funds
-/withdraw - Withdraw funds
 
 *Referrals:*
 /refer - Get referral link

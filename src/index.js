@@ -4,6 +4,7 @@ import { connectDB } from './database/connection.js';
 import { registerUserCommands } from './bot/commands/userCommands.js';
 import { registerAdminCommands } from './bot/commands/adminCommands.js';
 import { ScoreUpdater } from './cron/scoreUpdater.js';
+import { startApiServer } from './api/server.js';
 
 dotenv.config();
 
@@ -34,6 +35,10 @@ console.log('✅ Commands registered');
 
 // Initialize cron jobs for live score updates
 ScoreUpdater.init(bot);
+
+// Start API server
+const API_PORT = process.env.PORT || 3000;
+startApiServer(API_PORT);
 
 // Start bot
 bot.launch()

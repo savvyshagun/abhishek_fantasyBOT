@@ -74,10 +74,14 @@ export class ContestModel {
   }
 
   static async getByMatchId(matchId) {
-    return await Contest.find({
+    console.log('   🔍 Contest.getByMatchId called with:', matchId);
+    console.log('   🔍 matchId type:', typeof matchId);
+    const result = await Contest.find({
       matchId,
       status: 'open'
     });
+    console.log('   🔍 Query result count:', result.length);
+    return result;
   }
 
   static async incrementJoinedUsers(contestId) {
