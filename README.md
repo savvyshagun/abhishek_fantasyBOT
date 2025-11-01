@@ -310,13 +310,44 @@ For issues or questions:
 - Create an issue on GitHub
 - Contact: your-email@example.com
 
+## 🌐 Mini App
+
+A modern, mobile-first Telegram Mini App is now available!
+
+### Features
+- Beautiful mobile-optimized UI
+- Real-time match updates
+- Interactive team builder
+- Live leaderboards
+- Wallet management
+- Profile & referrals
+
+### Setup
+
+```bash
+# Navigate to mini app directory
+cd mini-app
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+**Full documentation:** [MINI_APP_SETUP.md](./MINI_APP_SETUP.md)
+
 ## 🚧 Roadmap
 
-- [ ] Mini App integration
+- [x] Mini App integration
+- [x] Telegram WebApp authentication
 - [ ] Multiple contest types
 - [ ] Advanced analytics
-- [ ] Social features
-- [ ] Mobile app
+- [ ] Social features (chat, sharing)
+- [ ] Payment gateway integration
 - [ ] Multi-language support
 
 ## 🤝 Contributing
