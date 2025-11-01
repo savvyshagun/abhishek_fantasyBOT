@@ -56,6 +56,7 @@ Hello ${user.firstName}! ${user.referredBy ? '🎁 You joined via a referral!' :
 🔗 Referral Code: \`${user.referralCode}\`
 
 *Available Commands:*
+/app - Open Mini App 🚀
 /matches - View upcoming matches
 /join - Join a contest
 /mycontests - Your active contests
@@ -64,10 +65,29 @@ Hello ${user.firstName}! ${user.referredBy ? '🎁 You joined via a referral!' :
 /refer - Get your referral link
 /help - Command list
 
-Let's start playing! Use /matches to see upcoming matches.
+Let's start playing! Use /app to open the full app or /matches to see upcoming matches.
     `.trim();
 
-    await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
+    // Add inline keyboard with Mini App button
+    const keyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: '🚀 Open Mini App',
+            web_app: { url: process.env.MINI_APP_URL || 'https://your-mini-app-url.com' }
+          }
+        ],
+        [
+          { text: '🏏 View Matches', callback_data: 'view_matches' },
+          { text: '💰 My Wallet', callback_data: 'view_wallet' }
+        ]
+      ]
+    };
+
+    await ctx.reply(welcomeMessage, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
   });
 
   // /matches command
@@ -319,10 +339,47 @@ Let's start playing! Use /matches to see upcoming matches.
     await ctx.reply(message, { parse_mode: 'Markdown' });
   });
 
+  // /app command - Opens mini app
+  bot.command('app', async (ctx) => {
+    const miniAppUrl = process.env.MINI_APP_URL || 'https://your-mini-app-url.com';
+
+    const message = `
+🚀 *Open Mini App*
+
+Click the button below to open the full Fantasy Cricket experience!
+
+✨ Features:
+• Beautiful mobile interface
+• Live match updates
+• Interactive team builder
+• Real-time leaderboards
+• Complete wallet management
+    `.trim();
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: '🚀 Open Mini App',
+            web_app: { url: miniAppUrl }
+          }
+        ]
+      ]
+    };
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  });
+
   // /help command
   bot.command('help', async (ctx) => {
     const message = `
 🏏 *Fantasy11 Cricket Bot - Commands*
+
+*Mini App:*
+/app - Open the full Mini App 🚀
 
 *Matches & Contests:*
 /matches - View upcoming matches
@@ -341,7 +398,7 @@ Let's start playing! Use /matches to see upcoming matches.
 /help - This help message
 /support - Contact support
 
-Need help? Contact @YourSupportUsername
+💡 Tip: Use /app for the best experience!
     `.trim();
 
     await ctx.reply(message, { parse_mode: 'Markdown' });

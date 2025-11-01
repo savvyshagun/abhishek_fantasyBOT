@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "db:setup": "node src/database/setup.js"
+    "db:setup": "node src/database/setup.js",
+    "mini-app": "cd mini-app && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run mini-app\" --names \"backend,mini-app\" --prefix-colors \"cyan,magenta\""
   },
   "keywords": [
     "telegram",
@@ -30,6 +32,7 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "nodemon": "^3.0.2"
   }
 }

@@ -1,6 +1,6 @@
-# 🚀 Quick Start - MongoDB Version
+# 🚀 Quick Start - Backend + Mini App
 
-The bot now uses MongoDB instead of MySQL - much easier to set up!
+Get both the backend and mini app running with one command!
 
 ## Step 1: Get Telegram Bot Token
 
@@ -63,32 +63,106 @@ PORT=3000
 NODE_ENV=development
 ```
 
-## Step 5: Install & Start
+## Step 5: Install All Dependencies
 
 ```bash
-# Install dependencies
+# Install backend dependencies
 npm install
 
-# Start the bot
-npm start
+# Install mini app dependencies
+cd mini-app
+npm install
+cd ..
+```
+
+## Step 6: Start Everything
+
+### Option 1: Run Both Together (Recommended) 🎯
+
+```bash
+npm run dev:all
+```
+
+This single command starts:
+- ✅ Backend API on `http://localhost:3000`
+- ✅ Mini App on `http://localhost:5173`
+- ✅ Telegram Bot (polling)
+- ✅ MongoDB connection
+- ✅ Cron jobs
+
+You'll see colored output:
+- **Cyan** = Backend logs
+- **Magenta** = Mini App logs
+
+### Option 2: Run Separately (2 Terminals)
+
+**Terminal 1 - Backend:**
+```bash
+npm run dev
+```
+
+**Terminal 2 - Mini App:**
+```bash
+npm run mini-app
 ```
 
 You should see:
 ```
-✅ MongoDB connected successfully
-📝 Registering bot commands...
-✅ Commands registered
-🤖 Fantasy Cricket Bot started successfully!
+[backend] ✅ MongoDB connected successfully
+[backend] 📝 Registering bot commands...
+[backend] ✅ Commands registered
+[backend] 🤖 Fantasy Cricket Bot started successfully!
+[backend] ✅ API Server running on port 3000
+[mini-app] VITE v5.0.0  ready in 500 ms
+[mini-app] ➜  Local:   http://localhost:5173/
 ```
 
-## Step 6: Test the Bot
+## Step 7: Test Everything
 
+### Test Backend
+```bash
+curl http://localhost:3000/api/health
+# Should return: {"status":"ok",...}
+```
+
+### Test Mini App
+Open browser: `http://localhost:5173`
+- Should see Fantasy Cricket home page
+- Navigation should work
+
+### Test Telegram Bot
 Open Telegram and find your bot:
 
 1. Send `/start` - Should register you
 2. Send `/wallet` - Should show $0 balance
 3. Send `/refer` - Should show referral link
 4. Send `/admin` - Should show admin panel (since you're admin)
+
+## Step 8: Test Mini App in Telegram (Optional)
+
+To test the mini app inside actual Telegram:
+
+1. **Install ngrok:**
+   ```bash
+   brew install ngrok  # macOS
+   ```
+
+2. **Start ngrok:**
+   ```bash
+   ngrok http 5173
+   ```
+
+3. **Copy the HTTPS URL** (e.g., `https://abc123.ngrok.io`)
+
+4. **Set in @BotFather:**
+   - Send `/mybots` → Select your bot
+   - Bot Settings → Menu Button
+   - Paste ngrok URL
+
+5. **Test:**
+   - Open your bot
+   - Click menu button (bottom-left)
+   - Mini app opens inside Telegram!
 
 ## ✅ You're All Set!
 
@@ -100,6 +174,16 @@ Open Telegram and find your bot:
 /listmatches
 /createcontest_1_TestContest_10_1000_10
 /matches
+```
+
+### Available npm Commands:
+
+```bash
+npm run dev:all     # Run both backend + mini app together
+npm run dev         # Run backend only
+npm run mini-app    # Run mini app only
+npm start           # Run backend in production mode
+npm run db:setup    # Setup database (first time)
 ```
 
 ## 🎯 MongoDB Atlas vs Local

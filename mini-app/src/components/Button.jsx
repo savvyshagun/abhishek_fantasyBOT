@@ -7,6 +7,7 @@ const Button = ({
   size = 'md',
   disabled = false,
   fullWidth = false,
+  icon,
   className = '',
   ...props
 }) => {
@@ -19,20 +20,22 @@ const Button = ({
     }
   };
 
-  const baseStyles = 'font-medium rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'font-semibold rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow-md';
 
   const variantStyles = {
-    primary: 'bg-tg-button text-tg-button-text hover:opacity-90',
-    secondary: 'bg-tg-secondary-bg text-tg-text border-2 border-tg-hint/20 hover:border-tg-hint/40',
-    outline: 'bg-transparent text-tg-button border-2 border-tg-button hover:bg-tg-button/10',
-    danger: 'bg-red-500 text-white hover:bg-red-600',
-    success: 'bg-green-500 text-white hover:bg-green-600',
+    primary: 'gradient-primary text-white hover:shadow-glow',
+    secondary: 'gradient-secondary text-white hover:shadow-glow-blue',
+    accent: 'gradient-accent text-white',
+    outline: 'bg-transparent text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50',
+    danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
+    success: 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
+    ghost: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
   };
 
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2.5 text-base',
-    lg: 'px-6 py-3 text-lg',
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-6 py-3 text-base',
+    lg: 'px-8 py-4 text-lg',
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';
@@ -44,7 +47,8 @@ const Button = ({
       disabled={disabled}
       {...props}
     >
-      {children}
+      {icon && <span className="flex-shrink-0">{icon}</span>}
+      <span>{children}</span>
     </button>
   );
 };
