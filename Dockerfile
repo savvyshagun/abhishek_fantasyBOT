@@ -1,33 +1,71 @@
-FROM node:18-alpine
+# Multi-stage build for backend
+FROM node:18-alpine AS backend-builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy backend package files
 COPY package*.json ./
 
-# Install dependencies
+# Install backend dependencies
 RUN npm ci --only=production
 
-# Copy application files
-COPY . .
+# Copy backend source
+COPY src ./src
+
+# Multi-stage build for mini app
+FROM node:18-alpine AS miniapp-builder
+
+WORKDIR /app
+
+# Copy mini app package files
+COPY mini-app/package*.json ./
+
+# Install mini app dependencies
+RUN npm ci
+
+# Copy mini app source
+COPY mini-app ./
+
+# Build mini app for production
+RUN npm run build
+
+# Final production image
+FROM node:18-alpine
+
+# Install nginx for serving mini app
+RUN apk add --no-cache nginx
+
+WORKDIR /app
+
+# Copy backend from builder
+COPY --from=backend-builder /app/node_modules ./node_modules
+COPY --from=backend-builder /app/package*.json ./
+COPY src ./src
+
+# Copy built mini app from builder
+COPY --from=miniapp-builder /app/dist ./mini-app/dist
+
+# Copy nginx config
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app && \
+    chown -R nodejs:nodejs /var/lib/nginx && \
+    chown -R nodejs:nodejs /var/log/nginx && \
+    mkdir -p /run/nginx && \
+    chown -R nodejs:nodejs /run/nginx
 
-# Change ownership
-RUN chown -R nodejs:nodejs /app
+# Create startup script
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
 
 # Switch to non-root user
 USER nodejs
 
-# Expose port (if needed for webhooks)
-EXPOSE 3000
+# Expose only mini app port
+EXPOSE 3019
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Start the bot
-CMD ["npm", "start"]
+# Start both services
+CMD ["/start.sh"]
