@@ -406,6 +406,9 @@ Click the button below to open the full Fantasy Cricket experience!
 *Wallet:*
 /wallet - View balance & transactions
 
+*Account:*
+/myid - Get your Telegram User ID
+
 *Referrals:*
 /refer - Get referral link
 /claim - Claim referral rewards
