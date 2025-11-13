@@ -373,6 +373,22 @@ Click the button below to open the full Fantasy Cricket experience!
     });
   });
 
+  // /myid command - Show user's Telegram ID
+  bot.command('myid', async (ctx) => {
+    const user = ctx.from;
+
+    let message = `👤 *Your Telegram Info*\n\n`;
+    message += `🆔 User ID: \`${user.id}\`\n`;
+    message += `👤 Name: ${user.first_name}${user.last_name ? ' ' + user.last_name : ''}\n`;
+    if (user.username) {
+      message += `📱 Username: @${user.username}\n`;
+    }
+    message += `\n💡 Your User ID is: \`${user.id}\`\n`;
+    message += `(Tap to copy)`;
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
   // /help command
   bot.command('help', async (ctx) => {
     const message = `
