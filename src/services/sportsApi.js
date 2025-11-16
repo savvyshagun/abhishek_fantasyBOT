@@ -57,30 +57,46 @@ export class SportsApiService {
     }
 
     try {
-      // Fetch both current (live) and upcoming matches
-      const [currentResponse, upcomingResponse] = await Promise.all([
+      // Fetch both current (live) and upcoming matches with multiple offsets
+      const requests = [];
+
+      // Current matches (live)
+      requests.push(
         axios.get('https://api.cricapi.com/v1/currentMatches', {
           params: { apikey: CRICAPI_KEY, offset: 0 }
-        }).catch(() => ({ data: { data: [] } })),
-        axios.get('https://api.cricapi.com/v1/matches', {
-          params: { apikey: CRICAPI_KEY, offset: 0 }
         }).catch(() => ({ data: { data: [] } }))
-      ]);
+      );
 
-      const currentMatches = currentResponse.data?.data || [];
-      const upcomingMatches = upcomingResponse.data?.data || [];
+      // Upcoming matches with multiple pages to get more matches
+      for (let offset = 0; offset < 50; offset += 25) {
+        requests.push(
+          axios.get('https://api.cricapi.com/v1/matches', {
+            params: { apikey: CRICAPI_KEY, offset }
+          }).catch(() => ({ data: { data: [] } }))
+        );
+      }
 
-      // Combine and deduplicate matches
-      const allMatches = [...currentMatches];
-      const existingIds = new Set(currentMatches.map(m => m.id));
+      const responses = await Promise.all(requests);
 
-      // Add upcoming matches that aren't already in current matches
-      for (const match of upcomingMatches) {
-        if (!existingIds.has(match.id) && !match.matchEnded) {
-          allMatches.push(match);
+      // Combine all matches
+      const allMatches = [];
+      const existingIds = new Set();
+
+      for (const response of responses) {
+        const matches = response.data?.data || [];
+        for (const match of matches) {
+          // Only add T20 and ODI matches that haven't ended
+          if (!existingIds.has(match.id) && !match.matchEnded) {
+            // Include all T20 matches and ODIs
+            if (match.matchType === 't20' || match.matchType === 'odi') {
+              allMatches.push(match);
+              existingIds.add(match.id);
+            }
+          }
         }
       }
 
+      console.log(`📊 Fetched ${allMatches.length} matches from CricAPI (T20 & ODI only)`);
       return allMatches;
     } catch (error) {
       console.error('CricAPI error:', error.message);
