@@ -85,18 +85,15 @@ export class SportsApiService {
       for (const response of responses) {
         const matches = response.data?.data || [];
         for (const match of matches) {
-          // Only add T20 and ODI matches that haven't ended
+          // Add all matches that haven't ended (T20, ODI, Test)
           if (!existingIds.has(match.id) && !match.matchEnded) {
-            // Include all T20 matches and ODIs
-            if (match.matchType === 't20' || match.matchType === 'odi') {
-              allMatches.push(match);
-              existingIds.add(match.id);
-            }
+            allMatches.push(match);
+            existingIds.add(match.id);
           }
         }
       }
 
-      console.log(`📊 Fetched ${allMatches.length} matches from CricAPI (T20 & ODI only)`);
+      console.log(`📊 Fetched ${allMatches.length} matches from CricAPI`);
       return allMatches;
     } catch (error) {
       console.error('CricAPI error:', error.message);
