@@ -1,7 +1,9 @@
 import axios from 'axios';
 import WebApp from '@twa-dev/sdk';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Use relative URL for production (nginx proxies /api to backend)
+// Only use localhost for explicit local development
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
 const axiosInstance = axios.create({
