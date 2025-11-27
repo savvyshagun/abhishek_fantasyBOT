@@ -45,25 +45,29 @@ export const registerUserCommands = (bot) => {
       }
     }
 
+    // Escape special Markdown characters in username
+    const escapedUsername = (user.username || 'N/A').replace(/_/g, '\\_');
+    const escapedFirstName = (user.firstName || 'User').replace(/_/g, '\\_');
+
     const welcomeMessage = `
 🏏 *Welcome to Fantasy11 Cricket Bot!*
 
-Hello ${user.firstName}! ${user.referredBy ? '🎁 You joined via a referral!' : ''}
+Hello ${escapedFirstName}! ${user.referredBy ? '🎁 You joined via a referral!' : ''}
 
 *Your Account:*
-👤 Username: @${user.username || 'N/A'}
+👤 Username: @${escapedUsername}
 💰 Balance: $${user.walletBalance}
 🔗 Referral Code: \`${user.referralCode}\`
 
 *Available Commands:*
-/app - Open Mini App 🚀
-/matches - View upcoming matches
-/join - Join a contest
-/mycontests - Your active contests
-/leaderboard - Contest rankings
-/wallet - Manage your wallet
-/refer - Get your referral link
-/help - Command list
+/app \\- Open Mini App 🚀
+/matches \\- View upcoming matches
+/join \\- Join a contest
+/mycontests \\- Your active contests
+/leaderboard \\- Contest rankings
+/wallet \\- Manage your wallet
+/refer \\- Get your referral link
+/help \\- Command list
 
 Let's start playing! Use /app to open the full app or /matches to see upcoming matches.
     `.trim();
