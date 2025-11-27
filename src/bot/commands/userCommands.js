@@ -94,6 +94,64 @@ Let's start playing! Use /app to open the full app or /matches to see upcoming m
     });
   });
 
+  // Callback: View Matches button
+  bot.action('view_matches', async (ctx) => {
+    await ctx.answerCbQuery();
+
+    const matches = await Match.getUpcoming(10);
+
+    if (matches.length === 0) {
+      return ctx.reply('No upcoming matches found at the moment. Check back later!');
+    }
+
+    let message = '🏏 *Upcoming Matches*\n\n';
+
+    for (const match of matches) {
+      const date = new Date(match.matchDate).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Escape underscores in match name
+      const escapedName = (match.name || '').replace(/_/g, '\\_');
+      const escapedVenue = (match.venue || 'TBA').replace(/_/g, '\\_');
+
+      message += `📍 *${escapedName}*\n`;
+      message += `   ${match.team1} vs ${match.team2}\n`;
+      message += `   📅 ${date}\n`;
+      message += `   🏟 ${escapedVenue}\n`;
+      message += `   /join\\_${match.id}\n\n`;
+    }
+
+    message += '\n💡 Tap /join\\_[match\\_id] to see contests for a match';
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
+  // Callback: View Wallet button
+  bot.action('view_wallet', async (ctx) => {
+    await ctx.answerCbQuery();
+
+    const user = await User.findByTelegramId(ctx.from.id);
+
+    if (!user) {
+      return ctx.reply('Please start the bot first with /start');
+    }
+
+    const message = `
+💰 *Your Wallet*
+
+💵 Balance: $${user.walletBalance}
+🎁 Referral Earnings: $${user.referralEarnings || 0}
+
+To add funds, please contact admin.
+    `.trim();
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  });
+
   // /matches command
   bot.command('matches', async (ctx) => {
     const matches = await Match.getUpcoming(10);
@@ -112,14 +170,18 @@ Let's start playing! Use /app to open the full app or /matches to see upcoming m
         minute: '2-digit'
       });
 
-      message += `📍 *${match.name}*\n`;
+      // Escape underscores in match name and venue
+      const escapedName = (match.name || '').replace(/_/g, '\\_');
+      const escapedVenue = (match.venue || 'TBA').replace(/_/g, '\\_');
+
+      message += `📍 *${escapedName}*\n`;
       message += `   ${match.team1} vs ${match.team2}\n`;
       message += `   📅 ${date}\n`;
-      message += `   🏟 ${match.venue || 'TBA'}\n`;
+      message += `   🏟 ${escapedVenue}\n`;
       message += `   /join\\_${match.id}\n\n`;
     }
 
-    message += '\n💡 Tap /join_[match_id] to see contests for a match';
+    message += '\n💡 Tap /join\\_[match\\_id] to see contests for a match';
 
     await ctx.reply(message, { parse_mode: 'Markdown' });
   });
